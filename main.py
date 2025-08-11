@@ -33,6 +33,9 @@ EMAIL_PASSWORD = os.getenv('EMAIL_PASSWORD', '')
 SMTP_SERVER = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
 SMTP_PORT = int(os.getenv('SMTP_PORT', '587'))
 
+# Store recent recordings (temporary - in production use database)
+recent_recordings = []
+
 def classify_voicemail(transcription):
     """Use OpenAI to classify the voicemail message"""
     try:
@@ -284,14 +287,27 @@ def handle_recording():
         # Get recording data
         recording_url = request.form.get('RecordingUrl', '')
         recording_type = request.args.get('type', 'unknown')
+        duration = request.form.get('RecordingDuration', '0')
+        
+        # Store recording info
+        import datetime
+        recording_info = {
+            'type': recording_type,
+            'url': recording_url,
+            'duration': duration,
+            'timestamp': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'status': 'saved'
+        }
+        recent_recordings.append(recording_info)
+        
+        # Keep only last 10 recordings
+        if len(recent_recordings) > 10:
+            recent_recordings.pop(0)
         
         print(f"RECORDING RECEIVED:")
         print(f"Type: {recording_type}")
         print(f"URL: {recording_url}")
-        print(f"Duration: {request.form.get('RecordingDuration', 'unknown')} seconds")
-        
-        # For now, just log the recording URL
-        # In production, you would download and store this audio file
+        print(f"Duration: {duration} seconds")
         
         response = VoiceResponse()
         response.say(
@@ -307,6 +323,39 @@ def handle_recording():
         response = VoiceResponse()
         response.say("Sorry, there was an error saving your recording.", voice='alice')
         return str(response)
+
+
+@app.route('/recording-status')
+def recording_status():
+    """Check recent recordings status"""
+    html = """
+    <h1>🎤 Recording Status</h1>
+    <h2>Recent Recordings:</h2>
+    """
+    
+    if recent_recordings:
+        html += "<ul>"
+        for recording in reversed(recent_recordings):  # Show newest first
+            html += f"""
+            <li>
+                <strong>Type:</strong> {recording['type']}<br>
+                <strong>Duration:</strong> {recording['duration']} seconds<br>
+                <strong>Time:</strong> {recording['timestamp']}<br>
+                <strong>Status:</strong> {recording['status']}<br>
+                <strong>URL:</strong> <a href="{recording['url']}" target="_blank">Play Recording</a><br>
+                <hr>
+            </li>
+            """
+        html += "</ul>"
+    else:
+        html += "<p>No recordings found yet.</p>"
+    
+    html += """
+    <p><a href="/">← Back to Home</a></p>
+    <p><em>This is a temporary status page for checking recordings.</em></p>
+    """
+    
+    return html
 
 
 if __name__ == '__main__':
