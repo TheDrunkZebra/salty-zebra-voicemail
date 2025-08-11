@@ -5,7 +5,7 @@ from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from twilio.twiml import VoiceResponse
+from twilio.twiml.voice_response import VoiceResponse
 import openai
 import requests
 
