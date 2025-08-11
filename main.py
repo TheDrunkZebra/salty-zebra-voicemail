@@ -132,22 +132,18 @@ def handle_voicemail():
         transcription = request.form.get('TranscriptionText', '')
         recording_url = request.form.get('RecordingUrl', '')
         
-        print(f"Received voicemail from {caller_number}")
+        # Get the type from URL parameter
+        message_type = request.args.get('type', 'general')
+        
+        print(f"Received {message_type} voicemail from {caller_number}")
         print(f"Transcription: {transcription}")
         
-        # Classify the message
-        classification = classify_voicemail(transcription) if transcription else 'other'
-        print(f"Classification: {classification}")
-        
-        # Send SMS response
-        send_sms_response(caller_number, classification)
-        
-        # Send email notification
-        send_email_notification(caller_number, transcription, classification)
+        # Send email notification with proper classification
+        send_email_notification(caller_number, transcription, message_type)
         
         return jsonify({
             'status': 'success',
-            'classification': classification,
+            'classification': message_type,
             'message': 'Voicemail processed successfully'
         })
         
@@ -155,34 +151,82 @@ def handle_voicemail():
         print(f"Error processing voicemail: {e}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
+
 @app.route('/webhook/voice', methods=['POST'])
 def handle_voice_call():
-    """Handle incoming voice calls and provide voicemail greeting"""
+    """Handle incoming voice calls with interactive menu"""
     response = VoiceResponse()
     
-    response.say(
-        "Thank you for calling Salty Zebra Bistro! We're currently unable to take your call, "
-        "but your message is important to us. Please leave a detailed message after the beep, "
-        "and we'll get back to you shortly. You'll also receive a text message with helpful links!",
-        voice='alice'
-    )
+    # Get user input if any
+    digits = request.form.get('Digits', '')
     
-    response.record(
-        transcribe=True,
-        transcribe_callback='/webhook/voicemail',
-        max_length=120,
-        finish_on_key='#'
-    )
+    if not digits:
+        # Main menu
+        response.say(
+            "Thanks for calling The Salty Zebra Bistro! "
+            "Press 1 for reservations, Press 2 for private events, "
+            "or Press 3 to leave a general message.",
+            voice='alice'
+        )
+        
+        gather = response.gather(num_digits=1, action='/webhook/voice', method='POST')
+        
+        # If no input, go to general voicemail
+        response.say("Let's get you to our voicemail.", voice='alice')
+        response.redirect('/webhook/voice?default=general')
+        
+    elif digits == '1':
+        # Reservation voicemail
+        response.say(
+            "Great! You're calling about reservations. "
+            "Please leave your name, phone number, preferred date and time, "
+            "and party size after the beep. For immediate booking, "
+            "visit saltyzebrabistro.com or use our live chat.",
+            voice='alice'
+        )
+        response.record(
+            transcribe=True,
+            transcribe_callback='/webhook/voicemail?type=reservation',
+            max_length=120,
+            finish_on_key='#'
+        )
+        
+    elif digits == '2':
+        # Private event voicemail
+        response.say(
+            "Wonderful! You're interested in private events. "
+            "Please leave your name, phone number, event details, "
+            "and preferred dates after the beep. "
+            "Visit saltyzebrabistro.com for more information.",
+            voice='alice'
+        )
+        response.record(
+            transcribe=True,
+            transcribe_callback='/webhook/voicemail?type=event',
+            max_length=120,
+            finish_on_key='#'
+        )
+        
+    elif digits == '3' or request.args.get('default') == 'general':
+        # General voicemail
+        response.say(
+            "Hi, you've reached Seamus and Stephanie at The Salty Zebra Bistro in Jupiter. "
+            "We're currently with guests, but we'd love to help you join the herd! "
+            "Please leave your name, number, and how we can assist you. "
+            "For reservations or private events, visit saltyzebrabistro.com. Thanks!",
+            voice='alice'
+        )
+        response.record(
+            transcribe=True,
+            transcribe_callback='/webhook/voicemail?type=general',
+            max_length=120,
+            finish_on_key='#'
+        )
     
-    response.say("Thank you for your message. We'll be in touch soon!", voice='alice')
+    else:
+        # Invalid input, redirect to main menu
+        response.say("Sorry, that's not a valid option.", voice='alice')
+        response.redirect('/webhook/voice')
     
+    response.say("Thank you for calling The Salty Zebra!", voice='alice')
     return str(response)
-
-@app.route('/health')
-def health_check():
-    return jsonify({'status': 'healthy', 'service': 'Salty Zebra Voicemail System'})
-
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
-
