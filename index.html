@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salty Zebra Voicemail Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #006666, #5CADAD);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: #006666;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid #FF6F61;
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #006666;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .section-title {
+            font-size: 1.5em;
+            color: #006666;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #FF6F61;
+            padding-bottom: 10px;
+        }
+        
+        .voicemail-list {
+            display: grid;
+            gap: 15px;
+        }
+        
+        .voicemail-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            border-left: 4px solid #006666;
+            transition: transform 0.2s;
+        }
+        
+        .voicemail-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .voicemail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .caller-info {
+            font-weight: bold;
+            color: #006666;
+        }
+        
+        .timestamp {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .classification {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .classification.reservation {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .classification.private_event {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+        
+        .classification.off_the_menu {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+        
+        .classification.other {
+            background: #f1f8e9;
+            color: #388e3c;
+        }
+        
+        .transcription {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-style: italic;
+            border-left: 3px solid #FF6F61;
+        }
+        
+        .status-indicators {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .status-indicator {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.7em;
+            font-weight: bold;
+        }
+        
+        .status-indicator.success {
+            background: #c8e6c9;
+            color: #2e7d32;
+        }
+        
+        .status-indicator.failed {
+            background: #ffcdd2;
+            color: #c62828;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .refresh-btn {
+            background: #FF6F61;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            margin-bottom: 20px;
+            transition: background 0.3s;
+        }
+        
+        .refresh-btn:hover {
+            background: #e55a4f;
+        }
+        
+        .test-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+        }
+        
+        .test-form {
+            display: grid;
+            gap: 15px;
+        }
+        
+        .form-group {
+            display: grid;
+            gap: 5px;
+        }
+        
+        .form-group label {
+            font-weight: bold;
+            color: #006666;
+        }
+        
+        .form-group input,
+        .form-group textarea {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+        
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #006666;
+        }
+        
+        .test-btn {
+            background: #006666;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        
+        .test-btn:hover {
+            background: #004d4d;
+        }
+        
+        .test-result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .test-result.success {
+            background: #c8e6c9;
+            color: #2e7d32;
+        }
+        
+        .test-result.error {
+            background: #ffcdd2;
+            color: #c62828;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🦓 Salty Zebra Voicemail Dashboard</h1>
+            <p>AI-Powered Customer Communication System</p>
+        </div>
+        
+        <div class="stats" id="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="totalVoicemails">-</div>
+                <div class="stat-label">Total Voicemails</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="todayVoicemails">-</div>
+                <div class="stat-label">Today</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="reservations">-</div>
+                <div class="stat-label">Reservations</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="events">-</div>
+                <div class="stat-label">Events</div>
+            </div>
+        </div>
+        
+        <div class="content">
+            <button class="refresh-btn" onclick="loadVoicemails()">🔄 Refresh</button>
+            
+            <h2 class="section-title">Recent Voicemails</h2>
+            <div id="voicemailList" class="loading">
+                Loading voicemails...
+            </div>
+            
+            <div class="test-section">
+                <h3 class="section-title">Test AI Classification</h3>
+                <form class="test-form" onsubmit="testClassification(event)">
+                    <div class="form-group">
+                        <label for="testPhone">Phone Number:</label>
+                        <input type="tel" id="testPhone" value="+1234567890" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="testTranscription">Voicemail Transcription:</label>
+                        <textarea id="testTranscription" rows="3" placeholder="Enter a test voicemail message..." required></textarea>
+                    </div>
+                    <button type="submit" class="test-btn">Test Classification</button>
+                    <div id="testResult" class="test-result"></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let voicemails = [];
+        
+        async function loadVoicemails() {
+            try {
+                const response = await fetch('/api/voicemail/recent');
+                voicemails = await response.json();
+                updateStats();
+                renderVoicemails();
+            } catch (error) {
+                console.error('Error loading voicemails:', error);
+                document.getElementById('voicemailList').innerHTML = 
+                    '<div class="loading">Error loading voicemails. Please check your connection.</div>';
+            }
+        }
+        
+        function updateStats() {
+            const today = new Date().toDateString();
+            const todayVoicemails = voicemails.filter(vm => 
+                new Date(vm.created_at).toDateString() === today
+            );
+            
+            const reservations = voicemails.filter(vm => 
+                vm.classification === 'RESERVATION'
+            );
+            
+            const events = voicemails.filter(vm => 
+                vm.classification === 'PRIVATE_EVENT'
+            );
+            
+            document.getElementById('totalVoicemails').textContent = voicemails.length;
+            document.getElementById('todayVoicemails').textContent = todayVoicemails.length;
+            document.getElementById('reservations').textContent = reservations.length;
+            document.getElementById('events').textContent = events.length;
+        }
+        
+        function renderVoicemails() {
+            const container = document.getElementById('voicemailList');
+            
+            if (voicemails.length === 0) {
+                container.innerHTML = '<div class="loading">No voicemails yet.</div>';
+                return;
+            }
+            
+            container.innerHTML = voicemails.map(vm => `
+                <div class="voicemail-card">
+                    <div class="voicemail-header">
+                        <div class="caller-info">${vm.caller_phone}</div>
+                        <div class="timestamp">${formatDate(vm.created_at)}</div>
+                    </div>
+                    
+                    <div class="classification ${vm.classification?.toLowerCase() || 'other'}">
+                        ${vm.classification || 'PENDING'} ${vm.confidence ? `(${vm.confidence})` : ''}
+                    </div>
+                    
+                    ${vm.transcription ? `
+                        <div class="transcription">
+                            "${vm.transcription}"
+                        </div>
+                    ` : ''}
+                    
+                    <div class="status-indicators">
+                        <span class="status-indicator ${vm.sms_sent ? 'success' : 'failed'}">
+                            SMS ${vm.sms_sent ? '✓' : '✗'}
+                        </span>
+                        <span class="status-indicator ${vm.email_sent ? 'success' : 'failed'}">
+                            Email ${vm.email_sent ? '✓' : '✗'}
+                        </span>
+                        ${vm.duration ? `<span class="status-indicator success">${vm.duration}s</span>` : ''}
+                    </div>
+                    
+                    ${vm.recording_url ? `
+                        <div style="margin-top: 10px;">
+                            <a href="${vm.recording_url}" target="_blank" style="color: #006666;">🎵 Listen to Recording</a>
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+        
+        function formatDate(dateString) {
+            if (!dateString) return 'Unknown';
+            const date = new Date(dateString);
+            return date.toLocaleString();
+        }
+        
+        async function testClassification(event) {
+            event.preventDefault();
+            
+            const phone = document.getElementById('testPhone').value;
+            const transcription = document.getElementById('testTranscription').value;
+            const resultDiv = document.getElementById('testResult');
+            
+            try {
+                const response = await fetch('/api/voicemail/test', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        phone: phone,
+                        transcription: transcription
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'test-result success';
+                    resultDiv.innerHTML = `
+                        <strong>Classification Result:</strong><br>
+                        <strong>Type:</strong> ${result.classification} (${result.confidence})<br>
+                        <strong>SMS Response:</strong> ${result.sms_response}<br>
+                        <strong>Action URL:</strong> <a href="${result.action_url}" target="_blank">${result.action_url}</a><br>
+                        <strong>Summary:</strong> ${result.summary}
+                    `;
+                } else {
+                    resultDiv.className = 'test-result error';
+                    resultDiv.innerHTML = `<strong>Error:</strong> ${result.error || 'Unknown error'}`;
+                }
+                
+                resultDiv.style.display = 'block';
+                
+            } catch (error) {
+                resultDiv.className = 'test-result error';
+                resultDiv.innerHTML = `<strong>Error:</strong> ${error.message}`;
+                resultDiv.style.display = 'block';
+            }
+        }
+        
+        // Load voicemails on page load
+        loadVoicemails();
+        
+        // Auto-refresh every 30 seconds
+        setInterval(loadVoicemails, 30000);
+    </script>
+</body>
+</html>
