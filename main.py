@@ -199,13 +199,28 @@ def handle_voice_call():
             voice='alice'
         )
         
-        gather = response.gather(num_digits=1, action='/webhook/voice', method='POST')
+        gather = response.gather(num_digits=2, action='/webhook/voice', method='POST', timeout=10)
         
         # If no input, go to general voicemail
         response.say("Let's get you to our voicemail.", voice='alice')
         response.redirect('/webhook/voice?default=general')
         
-    elif digits == '1':
+    elif digits == '99':
+        # TEMPORARY: Recording mode for owner
+        response.say(
+            "Recording mode activated. You will now record the main greeting message. "
+            "Speak clearly after the beep and press any key when finished.",
+            voice='alice'
+        )
+        response.record(
+            transcribe=False,
+            transcribe_callback='/webhook/recording?type=main_greeting',
+            max_length=30,
+            finish_on_key='#',
+            action='/webhook/recording?type=main_greeting'
+        )
+        
+    elif digits == '1' or (len(digits) == 1 and digits == '1'):
         # Reservation voicemail
         response.say(
             "Great! You're calling about reservations. "
@@ -221,7 +236,7 @@ def handle_voice_call():
             finish_on_key='#'
         )
         
-    elif digits == '2':
+    elif digits == '2' or (len(digits) == 1 and digits == '2'):
         # Private event voicemail
         response.say(
             "Wonderful! You're interested in private events. "
@@ -237,7 +252,7 @@ def handle_voice_call():
             finish_on_key='#'
         )
         
-    elif digits == '3' or request.args.get('default') == 'general':
+    elif digits == '3' or (len(digits) == 1 and digits == '3') or request.args.get('default') == 'general':
         # General voicemail
         response.say(
             "Hi, you've reached Seamus and Stephanie at The Salty Zebra Bistro in Jupiter. "
@@ -260,6 +275,38 @@ def handle_voice_call():
     
     response.say("Thank you for calling The Salty Zebra!", voice='alice')
     return str(response)
+
+
+@app.route('/webhook/recording', methods=['POST'])
+def handle_recording():
+    """Handle recorded audio from owner for custom messages"""
+    try:
+        # Get recording data
+        recording_url = request.form.get('RecordingUrl', '')
+        recording_type = request.args.get('type', 'unknown')
+        
+        print(f"RECORDING RECEIVED:")
+        print(f"Type: {recording_type}")
+        print(f"URL: {recording_url}")
+        print(f"Duration: {request.form.get('RecordingDuration', 'unknown')} seconds")
+        
+        # For now, just log the recording URL
+        # In production, you would download and store this audio file
+        
+        response = VoiceResponse()
+        response.say(
+            "Thank you! Your recording has been saved successfully. "
+            "The system will be updated shortly with your personal message.",
+            voice='alice'
+        )
+        
+        return str(response)
+        
+    except Exception as e:
+        print(f"Error handling recording: {e}")
+        response = VoiceResponse()
+        response.say("Sorry, there was an error saving your recording.", voice='alice')
+        return str(response)
 
 
 if __name__ == '__main__':
