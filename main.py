@@ -208,30 +208,15 @@ def handle_voice_call():
     digits = request.form.get('Digits', '')
     
     if not digits:
-        # Main menu - use recorded greeting if available, otherwise fallback to text-to-speech
-        try:
-            greeting_url = get_latest_main_greeting_url()
-            
-            if greeting_url:
-                # Use recorded personal greeting
-                response.play(greeting_url)
-            else:
-                # Fallback to text-to-speech
-                response.say(
-                    "Thanks for calling The Salty Zebra Bistro! "
-                    "Press 1 for reservations, Press 2 for private events, "
-                    "or Press 3 to leave a general message.",
-                    voice='alice'
-                )
-        except Exception as e:
-            print(f"Error with greeting: {e}")
-            # Emergency fallback to text-to-speech
-            response.say(
-                "Thanks for calling The Salty Zebra Bistro! "
-                "Press 1 for reservations, Press 2 for private events, "
-                "or Press 3 to leave a general message.",
-                voice='alice'
-            )
+        # Main menu - using stable text-to-speech with Locals Pub mention
+        response.say(
+            "Thanks for calling The Salty Zebra Bistro! "
+            "Press 1 for reservations, Press 2 for private events, "
+            "or Press 3 to leave a general message. "
+            "Did you know we have an adjoining bar? "
+            "Step through to Locals Pub for cozy vibes, live music, and the perfect end to your evening!",
+            voice='alice'
+        )
         
         gather = response.gather(num_digits=2, action='/webhook/voice', method='POST', timeout=10)
         
