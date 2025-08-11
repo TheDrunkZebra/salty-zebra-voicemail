@@ -28,6 +28,10 @@ TWILIO_PHONE_NUMBER = os.getenv('TWILIO_PHONE_NUMBER')
 
 # Email configuration
 EMAIL_TO = os.getenv('EMAIL_TO', 'stephanie@saltyzebrabistro.com')
+EMAIL_FROM = os.getenv('EMAIL_FROM', 'voicemail@saltyzebrabistro.com')
+EMAIL_PASSWORD = os.getenv('EMAIL_PASSWORD', '')
+SMTP_SERVER = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
+SMTP_PORT = int(os.getenv('SMTP_PORT', '587'))
 
 def classify_voicemail(transcription):
     """Use OpenAI to classify the voicemail message"""
@@ -81,7 +85,11 @@ def send_sms_response(to_number, message_type):
 def send_email_notification(caller_number, transcription, classification):
     """Send email notification to restaurant staff"""
     try:
-        subject = f"New Voicemail - {classification.title()} Inquiry"
+        # Create message
+        msg = MIMEMultipart()
+        msg['From'] = EMAIL_FROM
+        msg['To'] = EMAIL_TO
+        msg['Subject'] = f"New Voicemail - {classification.title()} Inquiry"
         
         body = f"""
 New voicemail received at Salty Zebra Bistro:
@@ -97,13 +105,35 @@ Please follow up as needed.
 - Salty Zebra AI Voicemail System
         """
         
-        # For now, just print the email (you can configure SMTP later)
-        print(f"EMAIL NOTIFICATION:")
-        print(f"To: {EMAIL_TO}")
-        print(f"Subject: {subject}")
-        print(f"Body: {body}")
+        msg.attach(MIMEText(body, 'plain'))
         
-        return True
+        # Try to send email if credentials are available
+        if EMAIL_PASSWORD:
+            try:
+                server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+                server.starttls()
+                server.login(EMAIL_FROM, EMAIL_PASSWORD)
+                text = msg.as_string()
+                server.sendmail(EMAIL_FROM, EMAIL_TO, text)
+                server.quit()
+                print(f"Email sent successfully to {EMAIL_TO}")
+                return True
+            except Exception as smtp_error:
+                print(f"SMTP Error: {smtp_error}")
+                # Fall back to console logging
+                print(f"EMAIL NOTIFICATION (SMTP failed):")
+                print(f"To: {EMAIL_TO}")
+                print(f"Subject: {msg['Subject']}")
+                print(f"Body: {body}")
+                return False
+        else:
+            # No email credentials configured, log to console
+            print(f"EMAIL NOTIFICATION (No SMTP configured):")
+            print(f"To: {EMAIL_TO}")
+            print(f"Subject: {msg['Subject']}")
+            print(f"Body: {body}")
+            return True
+            
     except Exception as e:
         print(f"Error sending email: {e}")
         return False
