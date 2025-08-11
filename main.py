@@ -230,3 +230,9 @@ def handle_voice_call():
     
     response.say("Thank you for calling The Salty Zebra!", voice='alice')
     return str(response)
+
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
+
