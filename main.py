@@ -38,10 +38,17 @@ recent_recordings = []
 
 def get_latest_main_greeting_url():
     """Get the URL of the most recent main greeting recording"""
-    for recording in reversed(recent_recordings):
-        if recording.get('type') == 'main_greeting':
-            return recording.get('url')
-    return None
+    try:
+        if not recent_recordings:
+            return None
+            
+        for recording in reversed(recent_recordings):
+            if recording and recording.get('type') == 'main_greeting' and recording.get('url'):
+                return recording.get('url')
+        return None
+    except Exception as e:
+        print(f"Error getting greeting URL: {e}")
+        return None
 
 def classify_voicemail(transcription):
     """Use OpenAI to classify the voicemail message"""
@@ -201,14 +208,24 @@ def handle_voice_call():
     digits = request.form.get('Digits', '')
     
     if not digits:
-        # Main menu - use recorded greeting if available
-        greeting_url = get_latest_main_greeting_url()
-        
-        if greeting_url:
-            # Use recorded personal greeting
-            response.play(greeting_url)
-        else:
-            # Fallback to text-to-speech
+        # Main menu - use recorded greeting if available, otherwise fallback to text-to-speech
+        try:
+            greeting_url = get_latest_main_greeting_url()
+            
+            if greeting_url:
+                # Use recorded personal greeting
+                response.play(greeting_url)
+            else:
+                # Fallback to text-to-speech
+                response.say(
+                    "Thanks for calling The Salty Zebra Bistro! "
+                    "Press 1 for reservations, Press 2 for private events, "
+                    "or Press 3 to leave a general message.",
+                    voice='alice'
+                )
+        except Exception as e:
+            print(f"Error with greeting: {e}")
+            # Emergency fallback to text-to-speech
             response.say(
                 "Thanks for calling The Salty Zebra Bistro! "
                 "Press 1 for reservations, Press 2 for private events, "
